@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESP32 开发板 · 设备与接线教学页</title>
+<style>
+  :root{
+    --bg:#f4f7fb; --card:#ffffff; --ink:#1e293b; --muted:#64748b;
+    --line:#e2e8f0; --accent:#2563eb; --accent2:#0ea5e9;
+    --ok:#16a34a; --warn:#d97706; --bad:#dc2626;
+    --c-vcc:#dc2626; --c-gnd:#334155; --c-mosi:#2563eb; --c-sck:#ea580c;
+    --c-cs:#16a34a; --c-res:#0891b2; --c-dc:#7c3aed; --c-bl:#db2777;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.07);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Segoe UI","Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    font-size:16px; line-height:1.65;
+  }
+  code,.mono{font-family:Consolas,"Cascadia Mono","JetBrains Mono",monospace}
+  a{color:var(--accent)}
+
+  /* ===== 顶部导航 ===== */
+  nav{
+    position:sticky; top:0; z-index:50; background:rgba(255,255,255,.92);
+    backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:4px; padding:8px 18px; overflow-x:auto;
+  }
+  nav .brand{font-weight:700; margin-right:14px; white-space:nowrap; color:#0f172a}
+  nav .brand .dot{display:inline-block;width:10px;height:10px;border-radius:50%;
+    background:var(--ok); margin-right:6px; box-shadow:0 0 0 3px rgba(22,163,74,.18)}
+  nav a{color:var(--muted); text-decoration:none; font-size:14px; padding:6px 10px;
+    border-radius:8px; white-space:nowrap}
+  nav a:hover{background:#eef2ff; color:var(--accent)}
+
+  main{max-width:1080px; margin:0 auto; padding:26px 20px 80px}
+
+  /* ===== 头部 ===== */
+  header.hero{
+    background:linear-gradient(135deg,#0f2a5f 0%,#1d4ed8 55%,#0ea5e9 100%);
+    color:#fff; border-radius:20px; padding:34px 34px 28px; box-shadow:var(--shadow);
+  }
+  header.hero h1{margin:0 0 6px; font-size:30px; letter-spacing:.5px}
+  header.hero p.sub{margin:0 0 18px; opacity:.85; font-size:15px}
+  .badges{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px}
+  .badge{background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25);
+    padding:4px 12px; border-radius:999px; font-size:13px}
+  .statgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px}
+  .stat{background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18);
+    border-radius:12px; padding:10px 14px}
+  .stat .k{font-size:12px; opacity:.75}
+  .stat .v{font-size:15.5px; font-weight:600; word-break:break-all}
+
+  /* ===== 通用区块 ===== */
+  section{margin-top:44px}
+  h2{font-size:23px; margin:0 0 4px; display:flex; align-items:center; gap:10px}
+  h2 .no{background:var(--accent); color:#fff; font-size:14px; width:28px; height:28px;
+    border-radius:8px; display:inline-flex; align-items:center; justify-content:center; flex:none}
+  p.lead{color:var(--muted); margin:2px 0 18px; font-size:14.5px}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:20px 22px}
+
+  .tip{display:flex; gap:10px; background:#fffbeb; border:1px solid #fde68a;
+    border-radius:12px; padding:12px 14px; margin-top:14px; font-size:14.5px}
+  .tip .ico{flex:none}
+  .tip.blue{background:#eff6ff; border-color:#bfdbfe}
+  .tip.green{background:#f0fdf4; border-color:#bbf7d0}
+  .tip.red{background:#fef2f2; border-color:#fecaca}
+
+  /* ===== 接线图 ===== */
+  .diagram-wrap{padding:14px 14px 6px}
+  svg{width:100%; height:auto; display:block; user-select:none}
+  .wire path{fill:none; stroke-width:3.2; transition:opacity .25s, stroke-width .2s}
+  .wire .casing{stroke:#ffffff; stroke-width:7; opacity:.85}
+  .wire{cursor:pointer}
+  svg.focused .wire{opacity:.12}
+  svg.focused .wire.active{opacity:1}
+  svg.focused .wire.active path.sig{stroke-width:4.4}
+  .pad{cursor:pointer}
+  .pad rect{transition:filter .2s}
+  .pad:hover rect{filter:brightness(1.35)}
+  .pad.sel rect{stroke:#fff; stroke-width:2.5; filter:brightness(1.3)}
+  .wlabel{font-size:12.5px; font-weight:600; paint-order:stroke; stroke:#f8fafc;
+    stroke-width:4px; pointer-events:none}
+  .legend{display:flex; flex-wrap:wrap; gap:8px 16px; padding:12px 6px 14px; font-size:13.5px}
+  .legend span{display:inline-flex; align-items:center; gap:7px; cursor:pointer}
+  .legend i{width:26px; height:4px; border-radius:2px; display:inline-block}
+
+  /* 讲解面板 */
+  .infopanel{border-top:1px dashed var(--line); margin-top:6px; padding:16px 8px 4px; min-height:96px}
+  .infopanel .ph{color:var(--muted); text-align:center; padding:22px 0}
+  .infopanel h3{margin:0 0 8px; font-size:17px; display:flex; gap:10px; align-items:center}
+  .infopanel .tag{font-size:12px; background:#eef2ff; color:var(--accent); border-radius:6px;
+    padding:2px 8px; white-space:nowrap}
+  .infopanel .warn{margin-top:10px; background:#fef2f2; border:1px solid #fecaca;
+    color:#991b1b; border-radius:10px; padding:9px 12px; font-size:14px}
+
+  /* ===== 引脚表 ===== */
+  .filters{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 14px}
+  .filters button{border:1px solid var(--line); background:#fff; color:var(--muted);
+    border-radius:999px; padding:5px 14px; font-size:13.5px; cursor:pointer; transition:.15s}
+  .filters button.on{background:var(--accent); border-color:var(--accent); color:#fff}
+  table.pins{width:100%; border-collapse:collapse; font-size:14px}
+  table.pins th{background:#f1f5f9; text-align:left; padding:9px 10px; font-size:13px;
+    color:#475569; border-bottom:2px solid var(--line); white-space:nowrap}
+  table.pins td{padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top}
+  table.pins tr:hover td{background:#f8fafc}
+  .chip{display:inline-block; font-family:Consolas,monospace; font-weight:700; font-size:13.5px;
+    background:#0f172a; color:#e2e8f0; border-radius:6px; padding:2px 9px}
+  .tag{display:inline-block; font-size:11.5px; border-radius:6px; padding:1px 8px; margin:1px 3px 1px 0;
+    border:1px solid transparent; white-space:nowrap}
+  .t-scr{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
+  .t-pwr{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
+  .t-uart{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}
+  .t-stp{background:#fffbeb;color:#b45309;border-color:#fde68a}
+  .t-free{background:#f8fafc;color:#64748b;border-color:#e2e8f0}
+  .t-in{background:#faf5ff;color:#7e22ce;border-color:#e9d5ff}
+  .lvl{font-family:Consolas,monospace; font-size:12.5px; white-space:nowrap}
+  .lvl b{font-weight:700}
+  .up{color:var(--ok)} .dn{color:var(--muted)} .fl{color:var(--warn)}
+
+  /* ===== 电气实测 ===== */
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  @media (max-width:860px){.grid2{grid-template-columns:1fr}}
+  .meas{display:grid; grid-template-columns:repeat(auto-fill,minmax(105px,1fr)); gap:8px; margin-top:6px}
+  .mcell{border:1px solid var(--line); border-radius:9px; padding:7px 9px; font-size:12.5px; background:#fafcff}
+  .mcell .g{font-family:Consolas,monospace; font-weight:700; font-size:13px}
+  .mcell .s{font-family:Consolas,monospace; color:var(--muted); font-size:11.5px}
+  .mcell.float{border-color:#fde68a; background:#fffbeb}
+  .mcell.ext{border-color:#bfdbfe; background:#eff6ff}
+  .mcell.inp{border-color:#e9d5ff; background:#faf5ff}
+
+  /* ===== 原理 ===== */
+  .flow{display:flex; flex-wrap:wrap; gap:0; align-items:stretch; margin:6px 0 4px}
+  .fstep{flex:1 1 130px; min-width:128px; background:#fff; border:1px solid var(--line);
+    border-radius:12px; padding:12px 12px; position:relative; margin:0 22px 14px 0}
+  .fstep::after{content:"➜"; position:absolute; right:-20px; top:50%; transform:translateY(-50%);
+    color:#94a3b8; font-size:15px}
+  .fstep:last-child{margin-right:0}
+  .fstep:last-child::after{content:""}
+  .fstep .n{font-size:11px; color:#fff; background:var(--accent2); width:20px; height:20px;
+    border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin-bottom:6px}
+  .fstep .t{font-weight:700; font-size:14px}
+  .fstep .d{font-size:12.5px; color:var(--muted); margin-top:3px}
+  pre{background:#0f172a; color:#e2e8f0; border-radius:12px; padding:16px 18px; overflow-x:auto;
+    font-size:13.5px; line-height:1.55; margin:10px 0}
+  pre .cm{color:#94a3b8} pre .kw{color:#7dd3fc} pre .num{color:#fbbf24} pre .st{color:#86efac}
+  table.cmds{width:100%; border-collapse:collapse; font-size:13.5px}
+  table.cmds th,table.cmds td{border-bottom:1px solid var(--line); padding:7px 9px; text-align:left}
+  table.cmds th{background:#f1f5f9; font-size:12.5px; color:#475569}
+  table.cmds td:first-child{font-family:Consolas,monospace; white-space:nowrap; color:#1d4ed8}
+
+  /* ===== 参数 / 红线 ===== */
+  .paramgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px}
+  .param{background:#fff; border:1px solid var(--line); border-left:5px solid var(--accent);
+    border-radius:12px; padding:14px 16px; box-shadow:var(--shadow)}
+  .param .pk{font-size:12.5px; color:var(--muted)}
+  .param .pv{font-size:16.5px; font-weight:700; margin:2px 0}
+  .param .pd{font-size:12.5px; color:var(--bad)}
+  .rulegrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px}
+  .rule{background:#fff; border:1px solid #fecaca; border-radius:12px; padding:15px 16px;
+    box-shadow:var(--shadow); display:flex; gap:12px}
+  .rule .ric{flex:none; font-size:20px}
+  .rule .rt{font-weight:700; font-size:15px; margin-bottom:3px}
+  .rule .rd{font-size:13.5px; color:#475569}
+
+  /* ===== 文件 / 命令 ===== */
+  table.files{width:100%; border-collapse:collapse; font-size:14px}
+  table.files th,table.files td{border-bottom:1px solid var(--line); padding:8px 10px; text-align:left}
+  table.files th{background:#f1f5f9; font-size:13px; color:#475569}
+  table.files td:first-child{font-family:Consolas,monospace; color:#1d4ed8; white-space:nowrap}
+  .hot{color:var(--bad); font-weight:700}
+
+  footer{margin-top:56px; padding-top:18px; border-top:1px solid var(--line);
+    color:var(--muted); font-size:13px}
+  footer .mono{font-size:12.5px}
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand"><span class="dot"></span>ESP32 开发板 · 教学讲解</span>
+  <a href="#overview">概览</a>
+  <a href="#wiring">接线图</a>
+  <a href="#pinmap">引脚地图</a>
+  <a href="#survey">电气实测</a>
+  <a href="#how">工作原理</a>
+  <a href="#params">关键参数</a>
+  <a href="#rules">教学红线</a>
+  <a href="#files">板载文件</a>
+</nav>
+
+<main>
+
+<!-- ============ 概览 ============ -->
+<header class="hero" id="overview">
+  <h1>ESP32 开发板 + ST7789 彩屏 · 设备档案</h1>
+  <p class="sub">数据来源：2026-09-30 实机检测（esptool 直读 + MicroPython REPL 实测 + 空闲引脚电气调查）—— 不是抄规格书，每一条都是这块板子自己"说"出来的。</p>
+  <div class="badges">
+    <span class="badge">🔌 USB 在线 · COM3 @ 115200</span>
+    <span class="badge">✅ main.py 启动正常（HELLO SHOWN）</span>
+    <span class="badge">🖥 外设：1× SPI 彩屏</span>
+    <span class="badge">📡 I2C 总线：空</span>
+  </div>
+  <div class="statgrid">
+    <div class="stat"><div class="k">主控芯片</div><div class="v">ESP32-D0WD-V3 rev v3.1</div></div>
+    <div class="stat"><div class="k">内核 / 主频</div><div class="v">双核 LX6 · 240MHz<br>（实测运行 160MHz）</div></div>
+    <div class="stat"><div class="k">无线</div><div class="v">Wi-Fi + 蓝牙 BLE</div></div>
+    <div class="stat"><div class="k">Flash</div><div class="v">4MB · Zbit 颗粒 · 无 PSRAM</div></div>
+    <div class="stat"><div class="k">固件</div><div class="v">MicroPython v1.29.0</div></div>
+    <div class="stat"><div class="k">MAC（STA）</div><div class="v mono">8C:94:DF:xx:xx:xx</div></div>
+  </div>
+</header>
+
+<!-- ============ 接线图 ============ -->
+<section id="wiring">
+  <h2><span class="no">1</span>交互式接线图</h2>
+  <p class="lead">下面这块板子目前<b>只外接了一个器件</b>：WLK1501SPI-8P 彩屏（驱动 IC：ST7789，240×240）。
+     <b>点击任意连线或引脚</b>，下方会显示它在电路里干什么、以及学生最容易踩的坑。</p>
+
+  <div class="card diagram-wrap">
+    <div class="legend">
+      <span data-k="vcc"><i style="background:var(--c-vcc)"></i>3.3V 电源</span>
+      <span data-k="gnd"><i style="background:var(--c-gnd)"></i>地 GND</span>
+      <span data-k="mosi"><i style="background:var(--c-mosi)"></i>MOSI（屏丝印写 SDA！）</span>
+      <span data-k="sck"><i style="background:var(--c-sck)"></i>SCK（屏丝印写 SCL）</span>
+      <span data-k="cs"><i style="background:var(--c-cs)"></i>片选 CS</span>
+      <span data-k="dc"><i style="background:var(--c-dc)"></i>命令/数据 DC</span>
+      <span data-k="res"><i style="background:var(--c-res)"></i>复位 RES</span>
+      <span data-k="bl"><i style="background:var(--c-bl)"></i>背光 BLK</span>
+      <span data-k="usb"><i style="background:#94a3b8;height:2px;border-top:2px dashed #94a3b8;background:none"></i>USB 串口（到电脑）</span>
+    </div>
+
+    <svg id="diag" viewBox="0 0 1060 660" role="img" aria-label="ESP32 与显示屏接线图">
+      <!-- 背景网格 -->
+      <defs>
+        <pattern id="grid" width="26" height="26" patternUnits="userSpaceOnUse">
+          <path d="M26 0H0V26" fill="none" stroke="#eef2f7" stroke-width="1"/>
+        </pattern>
+      </defs>
+      <rect x="0" y="0" width="1060" height="660" fill="url(#grid)"/>
+
+      <!-- ======== ESP32 开发板 ======== -->
+      <g>
+        <rect x="50" y="34" width="262" height="572" rx="14" fill="#1a6b52" stroke="#0f4a38" stroke-width="2"/>
+        <text x="181" y="622" text-anchor="middle" fill="#d1fae5" font-size="13" font-weight="700">ESP32 开发板（引脚位置示意）</text>
+        <!-- 模组 -->
+        <rect x="110" y="56" width="142" height="118" rx="6" fill="#3d4451" stroke="#22272f"/>
+        <path d="M118 50 l10 -12 l10 12 l10 -12 l10 12 l10 -12 l10 12 l10 -12 l10 12 l10 -12 l10 12 l10 -12 l10 12"
+              fill="none" stroke="#8b929e" stroke-width="2.4"/>
+        <text x="181" y="106" text-anchor="middle" fill="#e5e7eb" font-size="13" font-weight="700">ESP32-WROOM-32</text>
+        <text x="181" y="126" text-anchor="middle" fill="#9ca3af" font-size="11">Wi-Fi + BT · 双核 LX6</text>
+        <text x="181" y="144" text-anchor="middle" fill="#9ca3af" font-size="11">4MB Flash（Zbit）</text>
+        <!-- 按钮 -->
+        <circle cx="97" cy="530" r="15" fill="#374151" stroke="#9ca3af" stroke-width="2"/>
+        <text x="97" y="562" text-anchor="middle" fill="#d1fae5" font-size="11">EN/RST</text>
+        <circle cx="265" cy="530" r="15" fill="#374151" stroke="#9ca3af" stroke-width="2"/>
+        <text x="265" y="562" text-anchor="middle" fill="#d1fae5" font-size="11">BOOT</text>
+        <!-- USB -->
+        <rect x="132" y="576" width="98" height="30" rx="4" fill="#aab2bc" stroke="#7b848e"/>
+        <text x="181" y="596" text-anchor="middle" fill="#1f2937" font-size="11.5" font-weight="700">USB</text>
+      </g>
+
+      <!-- ======== 连线（先画线再画板卡? 线在板之上、显示器之下） ======== -->
+      <g id="wires">
+        <!-- casing -->
+        <g class="wire" data-k="gnd"><path class="casing" d=""/><path class="sig" stroke="var(--c-gnd)" d="M332 220 C 470 220, 610 150, 748 150"/></g>
+        <g class="wire" data-k="vcc"><path class="casing" d=""/><path class="sig" stroke="var(--c-vcc)" d="M332 540 C 470 540, 610 450, 748 450"/></g>
+        <g class="wire" data-k="mosi"><path class="casing" d=""/><path class="sig" stroke="var(--c-mosi)" d="M332 60 C 470 60, 610 350, 748 350"/></g>
+        <g class="wire" data-k="sck"><path class="casing" d=""/><path class="sig" stroke="var(--c-sck)" d="M332 284 C 470 284, 610 400, 748 400"/></g>
+        <g class="wire" data-k="cs"><path class="casing" d=""/><path class="sig" stroke="var(--c-cs)" d="M332 316 C 470 316, 610 200, 748 200"/></g>
+        <g class="wire" data-k="dc"><path class="casing" d=""/><path class="sig" stroke="var(--c-dc)" d="M332 444 C 470 444, 610 250, 748 250"/></g>
+        <g class="wire" data-k="res"><path class="casing" d=""/><path class="sig" stroke="var(--c-res)" d="M332 412 C 470 412, 610 300, 748 300"/></g>
+        <g class="wire" data-k="bl"><path class="casing" d=""/><path class="sig" stroke="var(--c-bl)" d="M332 252 C 470 252, 610 500, 748 500"/></g>
+        <g class="wire" data-k="usb"><path class="sig" stroke="#94a3b8" stroke-width="2.6" stroke-dasharray="7 5"
+             d="M132 591 C 100 591, 44 592, 14 592"/></g>
+      </g>
+      <!-- 连线文字标注 -->
+      <g class="wlabel" text-anchor="middle">
+        <text x="470" y="176" fill="var(--c-gnd)">GND</text>
+        <text x="620" y="222" fill="var(--c-mosi)">MOSI（SDA）</text>
+        <text x="452" y="258" fill="var(--c-cs)">CS</text>
+        <text x="612" y="272" fill="var(--c-dc)">DC</text>
+        <text x="452" y="330" fill="var(--c-sck)">SCK（SCL）</text>
+        <text x="612" y="330" fill="var(--c-res)">RES</text>
+        <text x="540" y="398" fill="var(--c-bl)">背光 BLK</text>
+        <text x="540" y="516" fill="var(--c-vcc)">VCC 3.3V</text>
+        <text x="18" y="584" text-anchor="start" fill="#64748b" font-size="11.5">USB → 电脑 COM3</text>
+      </g>
+
+      <!-- ======== 板右侧引脚 ======== -->
+      <g id="boardpins" font-size="11.5" font-family="Consolas,monospace" font-weight="700"></g>
+      <!-- ======== 显示屏 ======== -->
+      <g>
+        <rect x="770" y="70" width="212" height="470" rx="10" fill="#131c33" stroke="#0b1120" stroke-width="2"/>
+        <!-- 屏幕 -->
+        <rect x="796" y="102" width="160" height="160" rx="4" fill="#0a3d91" stroke="#1e3a8a"/>
+        <text x="876" y="168" text-anchor="middle" fill="#ffffff" font-size="20" font-weight="700">Hello,</text>
+        <text x="876" y="196" text-anchor="middle" fill="#ffffff" font-size="20" font-weight="700">Yangyang</text>
+        <text x="876" y="222" text-anchor="middle" fill="#93c5fd" font-size="10.5">main.py 上电实际显示画面</text>
+        <text x="876" y="298" text-anchor="middle" fill="#cbd5e1" font-size="14" font-weight="700">WLK1501SPI-8P</text>
+        <text x="876" y="321" text-anchor="middle" fill="#8fa3c8" font-size="12.5">驱动 IC：ST7789</text>
+        <text x="876" y="341" text-anchor="middle" fill="#8fa3c8" font-size="12.5">240 × 240 · RGB565</text>
+        <text x="876" y="361" text-anchor="middle" fill="#8fa3c8" font-size="11.5">IPS 面板 · 无触摸 · 8P 排针</text>
+        <text x="876" y="392" text-anchor="middle" fill="#f59e0b" font-size="11.5" font-weight="700">⚠ 无 MISO/SDO 引出 · 只写不可读</text>
+        <text x="876" y="424" text-anchor="middle" fill="#64748b" font-size="10.5">丝印顺序（自上而下）：</text>
+        <text x="876" y="441" text-anchor="middle" fill="#94a3b8" font-size="10.5">GND→CS→DC→RES→SDA→SCL→VCC→BLK</text>
+        <text x="876" y="472" text-anchor="middle" fill="#f59e0b" font-size="11.5" font-weight="700">丝印 SDA/SCL 像 I2C，</text>
+        <text x="876" y="489" text-anchor="middle" fill="#f59e0b" font-size="11.5" font-weight="700">实际是 SPI！别被骗了。</text>
+      </g>
+      <g id="dispins" font-size="11.5" font-family="Consolas,monospace" font-weight="700"></g>
+    </svg>
+
+    <div class="infopanel" id="infopanel">
+      <div class="ph">👆 点击任意连线、引脚或图例，这里会显示讲解</div>
+    </div>
+  </div>
+
+  <div class="tip blue">
+    <span class="ico">💡</span>
+    <span><b>教学主线：</b>这块屏的丝印 <code>SDA / SCL</code> 长得和 I2C 一模一样，实际是 <b>SPI 四线制</b>（MOSI + SCK + CS + DC）。
+    判断依据不是丝印，而是<code>main.py</code> 里的 <code>SPI(1, ...)</code> 和背板丝印 <code>IC:ST7789</code>——
+    <b>看代码和实物证据，别看名字猜协议</b>。</span>
+  </div>
+</section>
+
+<!-- ============ 引脚地图 ============ -->
+<section id="pinmap">
+  <h2><span class="no">2</span>全引脚地图（谁在干什么）</h2>
+  <p class="lead">按功能筛选查看。ESP32 共 34 个可用 GPIO，这块板子只占用了少数几个。</p>
+  <div class="card">
+    <div class="filters" id="filters">
+      <button class="on" data-f="all">全部</button>
+      <button data-f="scr">屏幕 SPI</button>
+      <button data-f="pwr">电源 / 地</button>
+      <button data-f="uart">串口</button>
+      <button data-f="stp">Strapping 引脚</button>
+      <button data-f="free">空闲（浮空）</button>
+      <button data-f="in">仅输入</button>
+    </div>
+    <div style="overflow-x:auto">
+    <table class="pins" id="pintable">
+      <thead><tr><th>引脚</th><th>角色</th><th>方向</th><th>电气实测 (2026-09-30)</th><th>讲解 / 注意</th></tr></thead>
+      <tbody>
+        <tr data-cat="scr"><td><span class="chip">GPIO23</span></td><td><span class="tag t-scr">屏幕 MOSI</span></td><td>输出 → 屏</td><td class="lvl">main.py 配置为 SPI</td><td>数据线：命令与像素都从这走。屏丝印叫 <b>SDA</b>，实为 SPI MOSI。</td></tr>
+        <tr data-cat="scr"><td><span class="chip">GPIO18</span></td><td><span class="tag t-scr">屏幕 SCK</span></td><td>输出 → 屏</td><td class="lvl">main.py 配置为 SPI</td><td>时钟线，固定 20MHz。<b>超 20MHz 实测会崩溃重启</b>。</td></tr>
+        <tr data-cat="scr stp"><td><span class="chip">GPIO5</span></td><td><span class="tag t-scr">屏幕 CS</span></td><td>输出 → 屏</td><td class="lvl">空闲高电平</td><td>片选（低有效）。也是 strapping 脚——上电需为高，与 CS 空闲高正好一致。</td></tr>
+        <tr data-cat="scr stp"><td><span class="chip">GPIO2</span></td><td><span class="tag t-scr">屏幕 DC</span></td><td>输出 → 屏</td><td class="lvl">main.py 配置为输出</td><td>低=命令 高=数据。⚠ 板载蓝灯可能与它并联，刷屏时灯会闪；<b>勿挪作他用</b>。</td></tr>
+        <tr data-cat="scr"><td><span class="chip">GPIO4</span></td><td><span class="tag t-scr">屏幕 RES</span></td><td>输出 → 屏</td><td class="lvl">main.py 配置为输出</td><td>硬件复位线：拉低 20ms 再拉高，让驱动 IC 回到初态。</td></tr>
+        <tr data-cat="scr"><td><span class="chip">GPIO19</span></td><td><span class="tag t-scr">屏幕背光 BL</span></td><td>输出 → 屏</td><td class="lvl">main.py 配置为输出</td><td>拉高点亮背光。屏幕全黑先查它。</td></tr>
+        <tr data-cat="scr in"><td><span class="chip">GPIO34</span></td><td><span class="tag t-in">代码假接 miso</span></td><td>（无线）</td><td class="lvl"><span class="fl">浮空 读0</span></td><td>代码里写了 miso=34，但屏幕 8P 版本<b>没引出 SDO</b>——所以永远读不到屏幕数据。</td></tr>
+        <tr data-cat="pwr"><td><span class="chip">3V3</span></td><td><span class="tag t-pwr">电源输出</span></td><td>→ 屏 VCC</td><td class="lvl">3.3V</td><td>屏幕供电。部分同型号模块可接 5V（板载稳压），要核对模块标注。</td></tr>
+        <tr data-cat="pwr"><td><span class="chip">GND</span></td><td><span class="tag t-pwr">公共地</span></td><td>→ 屏 GND</td><td class="lvl">0V</td><td>所有信号的参考点。<b>共地不良 → 花屏、乱点。</b></td></tr>
+        <tr data-cat="pwr"><td><span class="chip">VIN</span></td><td><span class="tag t-free">未接</span></td><td>—</td><td class="lvl">—</td><td>5V 输入口（USB 供电时已有电）。本项目未用。</td></tr>
+        <tr data-cat="uart"><td><span class="chip">GPIO1</span></td><td><span class="tag t-uart">U0TXD</span></td><td>输出 → CP210x</td><td class="lvl">串口忙</td><td>串口发送。经 CP210x 到电脑 <b>COM3 @115200</b>，REPL 和日志都走这里。</td></tr>
+        <tr data-cat="uart"><td><span class="chip">GPIO3</span></td><td><span class="tag t-uart">U0RXD</span></td><td>输入 ← CP210x</td><td class="lvl">串口忙</td><td>串口接收。DTR/RTS 还连着复位电路——打开串口会触发一次复位。</td></tr>
+        <tr data-cat="stp"><td><span class="chip">GPIO0</span></td><td><span class="tag t-stp">BOOT 键</span></td><td>输入</td><td class="lvl"><span class="up">外部拉高 = 1</span></td><td>上电时按住（低电平）→ 进下载模式。实测高电平 = 按键电路在上拉，工作正常。</td></tr>
+        <tr data-cat="stp"><td><span class="chip">GPIO12</span></td><td><span class="tag t-stp">MTDI</span></td><td>输入</td><td class="lvl"><span class="dn">读 0</span></td><td>strapping：决定 Flash 电压。必须保持低，接错东西可能变砖。</td></tr>
+        <tr data-cat="stp"><td><span class="chip">GPIO15</span></td><td><span class="tag t-stp">MTDO</span></td><td>输入</td><td class="lvl"><span class="up">读 1</span></td><td>strapping：控制启动日志输出。实测高，正常。</td></tr>
+        <tr data-cat="free"><td><span class="chip">GPIO13</span></td><td><span class="tag t-free">空闲</span></td><td>—</td><td class="lvl"><span class="fl">浮空 [0,1,0]</span></td><td><code>led-pin13.py</code> 的点灯脚本在这里，但<b>实测当前没接 LED</b>（上拉仍读 1）——做实验需临时外接 LED+限流电阻。</td></tr>
+        <tr data-cat="free"><td><span class="chip">GPIO14</span></td><td><span class="tag t-free">空闲</span></td><td>—</td><td class="lvl"><span class="fl">浮空 [1,1,0]</span></td><td>无连接，可自由使用。</td></tr>
+        <tr data-cat="free"><td><span class="chip">GPIO16</span></td><td><span class="tag t-free">空闲</span></td><td>—</td><td class="lvl"><span class="fl">浮空 [0,1,0]</span></td><td>无连接（WROOM 模组无 PSRAM，此脚可用）。</td></tr>
+        <tr data-cat="free"><td><span class="chip">GPIO17</span></td><td><span class="tag t-free">空闲</span></td><td>—</td><td class="lvl"><span class="fl">浮空 [0,1,0]</span></td><td>无连接，可自由使用。</td></tr>
+        <tr data-cat="free"><td><span class="chip">GPIO21</span></td><td><span class="tag t-free">I2C 默认 SDA</span></td><td>—</td><td class="lvl"><span class="fl">浮空 [0,1,0]</span></td><td>浮空 ⇒ <b>I2C 总线上没有接任何设备</b>（不用再扫）。</td></tr>
+        <tr data-cat="free"><td><span class="chip">GPIO22</span></td><td><span class="tag t-free">I2C 默认 SCL</span></td><td>—</td><td class="lvl"><span class="fl">浮空 [0,1,0]</span></td><td>同上，I2C 为空。若以后接 I2C 器件，用这两个脚最省心。</td></tr>
+        <tr data-cat="free"><td><span class="chip">GPIO25</span></td><td><span class="tag t-free">空闲</span></td><td>—</td><td class="lvl"><span class="fl">浮空 [0,1,0]</span></td><td>可作 DAC1 / ADC2。</td></tr>
+        <tr data-cat="free"><td><span class="chip">GPIO26</span></td><td><span class="tag t-free">空闲</span></td><td>—</td><td class="lvl"><span class="fl">浮空 [0,1,0]</span></td><td>可作 DAC2 / ADC2。</td></tr>
+        <tr data-cat="free"><td><span class="chip">GPIO27</span></td><td><span class="tag t-free">空闲</span></td><td>—</td><td class="lvl"><span class="fl">浮空 [0,1,0]</span></td><td>可作 ADC2 / 触摸。</td></tr>
+        <tr data-cat="free"><td><span class="chip">GPIO32</span></td><td><span class="tag t-free">空闲</span></td><td>—</td><td class="lvl"><span class="fl">浮空 [0,1,0]</span></td><td>可作 ADC1 / 晶振。</td></tr>
+        <tr data-cat="free"><td><span class="chip">GPIO33</span></td><td><span class="tag t-free">空闲</span></td><td>—</td><td class="lvl"><span class="fl">浮空 [0,1,0]</span></td><td>可作 ADC1 / 晶振。板载彩灯常见接法。</td></tr>
+        <tr data-cat="in"><td><span class="chip">GPIO35</span></td><td><span class="tag t-in">仅输入</span></td><td>输入</td><td class="lvl"><span class="fl">浮空 读0</span></td><td>无内部上拉/下拉，必须外接。</td></tr>
+        <tr data-cat="in"><td><span class="chip">GPIO36</span> <span class="chip">GPIO39</span></td><td><span class="tag t-in">仅输入 (VP/VN)</span></td><td>输入</td><td class="lvl"><span class="fl">浮空 读0</span></td><td>ADC1 检测通道，适合接传感器模拟输出。</td></tr>
+        <tr data-cat="pwr"><td><span class="chip">EN</span></td><td><span class="tag t-pwr">复位按键</span></td><td>—</td><td class="lvl">—</td><td>按下 = 芯片复位，<code>main.py</code> 重新执行，屏幕重画一遍。</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 电气实测 ============ -->
+<section id="survey">
+  <h2><span class="no">3</span>空闲引脚电气实测——"怎么知道线上有没有东西？"</h2>
+  <p class="lead">不接示波器也能查"连线"：把引脚配成输入，分别用<b>内部上拉</b>、<b>内部下拉</b>各读一次，
+     对比三个读数就能判断线是浮空、被拉高还是被拉低。</p>
+  <div class="grid2">
+    <div class="card">
+      <h3 style="margin:0 0 6px;font-size:16px">判读方法（本页表格数据的来历）</h3>
+      <table class="cmds">
+        <thead><tr><th>三种读数 [无上拉, 上拉, 下拉]</th><th>结论</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">[ x, 1, 0 ]</td><td><b>浮空</b> —— 线上什么都没接（上拉能拉到 1，下拉能拉到 0）</td></tr>
+          <tr><td class="mono">[ x, 1, 1 ]</td><td><b>被外部拉高</b> —— 接了电源/上拉电阻（下拉都拉不下来）</td></tr>
+          <tr><td class="mono">[ x, 0, 0 ]</td><td><b>被外部拉低 / 重负载</b> —— 接了地、按键按下或 LED 等（上拉都拉不上去）</td></tr>
+        </tbody>
+      </table>
+      <div class="tip">
+        <span class="ico">💡</span>
+        <span><b>讲解点：</b>GPIO34–39 是"仅输入"引脚，芯片内部<b>根本没有上下拉电阻</b>，读数永远不可靠——
+        这就是它们必须外接电阻的原因。这版的固件还裁掉了 <code>esp32.hall_sensor()</code> / <code>mcu_temperature()</code> / 触摸，调了会直接 AttributeError。</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="margin:0 0 6px;font-size:16px">实测结果一览</h3>
+      <div class="meas">
+        <div class="mcell ext"><div class="g">GPIO0</div><div class="s">[1] 上拉(BOOT键)</div></div>
+        <div class="mcell ext"><div class="g">GPIO15</div><div class="s">[1] MTDO</div></div>
+        <div class="mcell ext"><div class="g">GPIO12</div><div class="s">[0] MTDI 低</div></div>
+        <div class="mcell float"><div class="g">GPIO13</div><div class="s">[0,1,0] 浮空</div></div>
+        <div class="mcell float"><div class="g">GPIO14</div><div class="s">[1,1,0] 浮空</div></div>
+        <div class="mcell float"><div class="g">GPIO16</div><div class="s">[0,1,0] 浮空</div></div>
+        <div class="mcell float"><div class="g">GPIO17</div><div class="s">[0,1,0] 浮空</div></div>
+        <div class="mcell float"><div class="g">GPIO21</div><div class="s">[0,1,0] I2C空</div></div>
+        <div class="mcell float"><div class="g">GPIO22</div><div class="s">[0,1,0] I2C空</div></div>
+        <div class="mcell float"><div class="g">GPIO25</div><div class="s">[0,1,0] 浮空</div></div>
+        <div class="mcell float"><div class="g">GPIO26</div><div class="s">[0,1,0] 浮空</div></div>
+        <div class="mcell float"><div class="g">GPIO27</div><div class="s">[0,1,0] 浮空</div></div>
+        <div class="mcell float"><div class="g">GPIO32</div><div class="s">[0,1,0] 浮空</div></div>
+        <div class="mcell float"><div class="g">GPIO33</div><div class="s">[0,1,0] 浮空</div></div>
+        <div class="mcell inp"><div class="g">GPIO34</div><div class="s">[0] 悬空</div></div>
+        <div class="mcell inp"><div class="g">GPIO35</div><div class="s">[0] 悬空</div></div>
+        <div class="mcell inp"><div class="g">GPIO36</div><div class="s">[0] 悬空</div></div>
+        <div class="mcell inp"><div class="g">GPIO39</div><div class="s">[0] 悬空</div></div>
+      </div>
+      <p style="font-size:13.5px;color:var(--muted);margin:10px 0 0">
+        🎨 <span style="color:#b45309">黄</span>=浮空　<span style="color:#1d4ed8">蓝</span>=有外部连接　<span style="color:#7e22ce">紫</span>=仅输入脚。
+        屏幕占用的 GPIO2/4/5/18/19/23 不做此测量（避免打乱运行中的配置），其连接已由开机画面验证。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 工作原理 ============ -->
+<section id="how">
+  <h2><span class="no">4</span>从上电到画面出现，发生了什么？</h2>
+  <p class="lead">按住这个流程讲，学生能把"芯片、固件、脚本、屏幕"四层关系串起来。</p>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="t">上电 / 复位</div><div class="d">ROM 引导：<code>boot:0x13</code> 从 Flash 正常启动；GPIO0 为高 → 不进下载模式</div></div>
+      <div class="fstep"><span class="n">2</span><div class="t">加载 MicroPython</div><div class="d">v1.29.0 固件，以 160MHz 运行，初始化文件系统</div></div>
+      <div class="fstep"><span class="n">3</span><div class="t">执行 boot.py → main.py</div><div class="d">boot.py 是空模板；真正干活的是 main.py</div></div>
+      <div class="fstep"><span class="n">4</span><div class="t">初始化屏幕</div><div class="d">硬件复位 → 一串命令 → INVON 反色 → 开显示</div></div>
+      <div class="fstep"><span class="n">5</span><div class="t">逐行写像素</div><div class="d">240×240 蓝底白字 "Hello, Yangyang"，约 4.8 秒</div></div>
+      <div class="fstep"><span class="n">6</span><div class="t">REPL 待命</div><div class="d">串口打印 <code>HELLO SHOWN</code>，之后 COM3 可进交互</div></div>
+    </div>
+
+    <pre><code><span class="cm"># 板载 main.py 的"接线定义"——连线变了就改这里（全文见归档档案）</span>
+<span class="kw">SCK</span>, <span class="kw">MOSI</span>, <span class="kw">CS</span>, <span class="kw">DC</span>, <span class="kw">RST</span>, <span class="kw">BL</span> = <span class="num">18</span>, <span class="num">23</span>, <span class="num">5</span>, <span class="num">2</span>, <span class="num">4</span>, <span class="num">19</span>
+<span class="kw">WIDTH</span>, <span class="kw">HEIGHT</span> = <span class="num">240</span>, <span class="num">240</span>
+spi = SPI(<span class="num">1</span>, baudrate=<span class="num">20_000_000</span>, polarity=<span class="num">0</span>, phase=<span class="num">0</span>,
+          sck=Pin(<span class="num">18</span>), mosi=Pin(<span class="num">23</span>))   <span class="cm"># 注意：没有真的 MISO，屏不可读</span></code></pre>
+
+    <h3 style="font-size:16px;margin:18px 0 8px">屏幕初始化关键命令（精简版）</h3>
+    <table class="cmds">
+      <thead><tr><th>命令</th><th>作用</th><th>为什么需要</th></tr></thead>
+      <tbody>
+        <tr><td>RES 拉低 20ms</td><td>硬件复位</td><td>让驱动 IC 回到已知初态</td></tr>
+        <tr><td>0x01 / 0x11</td><td>软复位 / 退出睡眠</td><td>刚上电的屏幕在"睡觉"，不叫醒就写不进</td></tr>
+        <tr><td>0x3A = 0x55</td><td>设为 RGB565</td><td>每个像素 16 位（2 字节），和后面写的数据格式对上</td></tr>
+        <tr><td>0x2A / 0x2B</td><td>设写入窗口 0–239 × 0–239</td><td>这块屏 rowstart=0，<b>与网上常见的 80 不同</b>，照抄会偏移</td></tr>
+        <tr><td>0x21 (INVON)</td><td>颜色反色</td><td>IPS 面板必须开，否则红绿颠倒</td></tr>
+        <tr><td>0x2C + 数据</td><td>写显存</td><td>之后每 2 字节 = 1 个像素，一行行刷完 240 行</td></tr>
+      </tbody>
+    </table>
+    <div class="tip green">
+      <span class="ico">✅</span>
+      <span><b>验证小技巧：</b>复位板子，看到蓝底白字 <code>Hello, Yangyang</code> + 串口末尾 <code>HELLO SHOWN</code>，
+      就证明<b>屏幕、SPI、供电、共地全部正常</b>——这是每次接线后的标准自检动作。</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 关键参数 ============ -->
+<section id="params">
+  <h2><span class="no">5</span>必须遵守的工作参数</h2>
+  <div class="paramgrid">
+    <div class="param"><div class="pk">SPI 速率</div><div class="pv">≤ 20 MHz</div><div class="pd">40MHz 实测 Guru Meditation 无限重启；写进 main.py 会变上电死循环</div></div>
+    <div class="param"><div class="pk">SPI 模式</div><div class="pv">SPI(1) · CPOL=0 CPHA=0</div><div class="pd">改极性/相位会导致花屏或无显示</div></div>
+    <div class="param"><div class="pk">分辨率 / 行偏移</div><div class="pv">240×240 · rowstart=0</div><div class="pd">网上 240×240 示例多用偏移 80，照抄画面会整体偏移</div></div>
+    <div class="param"><div class="pk">色彩格式</div><div class="pv">RGB565 + 必须 INVON</div><div class="pd">不开 0x21 反色，颜色全部反相</div></div>
+    <div class="param"><div class="pk">数据方向</div><div class="pv">只写不可读</div><div class="pd">无 MISO 引出，读寄存器/ID 永远是 0xFF——不是故障</div></div>
+    <div class="param"><div class="pk">串口</div><div class="pv">COM3 · 115200 · 独占</div><div class="pd">Thonny / esptool / 脚本同时只能一个占用；打开会复位板子</div></div>
+  </div>
+</section>
+
+<!-- ============ 红线 ============ -->
+<section id="rules">
+  <h2><span class="no">6</span>教学红线（都是踩过的坑）</h2>
+  <div class="rulegrid">
+    <div class="rule"><span class="ric">🚫</span><div><div class="rt">别把 SDA/SCL 当 I2C</div><div class="rd">屏丝印像 I2C，实际是 SPI。按 I2C 接或执行 <code>I2C.scan()</code> 盲扫，会抢占 GPIO18/19，屏幕当场熄灭。</div></div></div>
+    <div class="rule"><span class="ric">⚡</span><div><div class="rt">SPI 不许超 20MHz</div><div class="rd">40MHz 直接崩溃重启；如果写进了 main.py，就要抢在启动瞬间 Ctrl+C 再删文件。</div></div></div>
+    <div class="rule"><span class="ric">📌</span><div><div class="rt">GPIO2 = 屏幕 DC，别挪用</div><div class="rd">板载蓝灯若与 DC 并联无法软件分离；点灯实验请用 GPIO13 等空闲脚（外接 LED）。</div></div></div>
+    <div class="rule"><span class="ric">🔒</span><div><div class="rt">串口是独占资源</div><div class="rd">报"拒绝访问"先关 Thonny；打开串口会触发复位，发命令前等 3–5 秒。</div></div></div>
+    <div class="rule"><span class="ric">🙈</span><div><div class="rt">别指望从屏幕读数据</div><div class="rd">无 MISO。曾盲扫 4080 种引脚组合找回读线，零命中——物理上就没有这条线。</div></div></div>
+    <div class="rule"><span class="ric">🧩</span><div><div class="rt">被裁剪的 API 别硬调</div><div class="rd">这版固件没有 <code>esp.flash_id()</code> / <code>esp32.hall_sensor()</code> / 触摸；芯片信息用 esptool 查。</div></div></div>
+  </div>
+</section>
+
+<!-- ============ 文件 ============ -->
+<section id="files">
+  <h2><span class="no">7</span>板载文件与常用命令</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3 style="margin:0 0 8px;font-size:16px">板载文件（2026-09-30 实测）</h3>
+      <table class="files">
+        <thead><tr><th>文件</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>main.py</td><td><b>现役主程序</b>：点亮屏幕显示 Hello, Yangyang（240×240）</td></tr>
+          <tr><td>boot.py</td><td>空模板（全注释），无实际动作</td></tr>
+          <tr><td>display_quickstart.py</td><td>屏幕驱动速用库：init / fill / text / 背光</td></tr>
+          <tr><td>main_old.py</td><td>改分辨率前的 320 版备份</td></tr>
+          <tr><td>breath2s.py</td><td>呼吸灯演示（PWM，GPIO2——注意与 DC 并联）</td></tr>
+          <tr><td>led-pin13.py</td><td>点 GPIO13 的 LED 5 秒（需临时外接 LED）</td></tr>
+          <tr><td>wifi-con.py</td><td>WiFi 连接脚本</td></tr>
+          <tr><td>web-led-ctl.py</td><td><span class="hot">⚠ 内含明文 WiFi 密码，分享前先删！</span></td></tr>
+          <tr><td>web_screen_remote.py</td><td>WiFi 手机遥控：网页按钮切换 HELLO/时钟/机器人/上海天气（已实测）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3 style="margin:0 0 8px;font-size:16px">课堂复现命令</h3>
+      <pre><code><span class="cm"># Python 环境（已装 pyserial + esptool v5.4.0）</span>
+PY="C:/Users/jenoq/.workbuddy/binaries/python/envs/default/Scripts/python.exe"
+
+<span class="cm"># 1) 抓启动日志（会复位板子）</span>
+$PY esp32_check.py COM3
+
+<span class="cm"># 2) 全量探测：固件 / 文件 / main.py / 引脚电气状态</span>
+$PY archive_probe.py COM3
+
+<span class="cm"># 3) 芯片权威信息（进一次下载模式，自动恢复）</span>
+$PY -m esptool --port COM3 chip-id
+$PY -m esptool --port COM3 flash-id</code></pre>
+      <p style="font-size:13.5px;color:var(--muted);margin:6px 0 0">
+        数据源文件：<code>ESP32设备归档档案_2026-09-30.md</code> ·
+        原始日志 <code>logs/archive_probe_20260930.log</code> ·
+        屏幕细节 <code>显示屏接线速查.md</code></p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div>检测时间：2026-09-30 21:42–21:55 · 检测方式：esptool 直读 + MicroPython REPL(raw) 实测 + 空闲 GPIO 电气调查 · 全部数据实机采集，非规格书摘录。</div>
+  <div class="mono" style="margin-top:4px">配套归档：ESP32设备归档档案_2026-09-30.md / 显示屏接线速查.md / ESP32设备状态报告.md</div>
+</footer>
+
+</main>
+
+<script>
+/* ================= 接线数据 ================= */
+const WIRE_INFO = {
+  mosi:{title:"SDA → GPIO23",tag:"SPI MOSI · 数据线",color:"var(--c-mosi)",
+    desc:"屏幕丝印写着 SDA，最容易让初学者误以为是 I2C——实际它是 SPI 的 <b>MOSI</b>（Master Out Slave In，主出从入）：ESP32 把命令和像素数据从这条线<b>单向</b>发给屏幕。配合 SCK 的时钟节拍，每位数据对应一个脉冲。",
+    warn:"不要按 I2C 去接、也不要 I2C.scan() 盲扫——会把 GPIO18/19 抢成 I2C 功能，屏幕当场熄灭（按 RST 复位可恢复）。"},
+  sck:{title:"SCL → GPIO18",tag:"SPI SCK · 时钟线",color:"var(--c-sck)",
+    desc:"SPI 的时钟线，由主机（ESP32）产生：每打一个节拍，MOSI 上就传输一位。本项目固定 <b>20 MHz</b>——这是实测出的安全上限。",
+    warn:"40 MHz 实测触发 Guru Meditation Error 无限重启；若写进 main.py 会变成上电死循环。"},
+  cs:{title:"CS → GPIO5",tag:"片选 · 低有效",color:"var(--c-cs)",
+    desc:"片选线：拉低时屏幕才开始'听'总线，拉高时忽略一切。总线空闲时保持高电平。GPIO5 同时是 strapping 引脚（上电时需为高）——正好与 CS 空闲高电平一致，这是很多屏幕默认接 GPIO5 的原因之一。"},
+  dc:{title:"DC → GPIO2",tag:"命令 / 数据切换",color:"var(--c-dc)",
+    desc:"DC（Data/Command）= 低电平表示线上传的是<b>命令</b>（如 0x2A 设窗口），高电平表示传的是<b>数据</b>（如像素）。SPI 本身没有'这是命令还是数据'的概念，全靠这根线区分——这是 SPI 屏幕独有的第四根线。",
+    warn:"GPIO2 也是 strapping 脚；板载蓝灯可能与它并联——刷屏时灯会微闪，且<b>不能挪作他用</b>。"},
+  res:{title:"RES → GPIO4",tag:"硬件复位",color:"var(--c-res)",
+    desc:"硬件复位线：拉低 20ms 再拉高，驱动 IC 回到刚上电的状态。main.py 初始化的第一步就是它，之后才是软件命令序列。程序跑飞、花屏时，复位板子（或只拉低这根线）就能恢复。"},
+  bl:{title:"BLK → GPIO19",tag:"背光控制",color:"var(--c-bl)",
+    desc:"背光使能：拉高点亮 LED 背光，拉低熄灭（省电手段）。屏幕'全黑但电源正常'时，第一个要检查的就是这根线有没有被拉高。"},
+  vcc:{title:"VCC → 3V3",tag:"电源 3.3V",color:"var(--c-vcc)",
+    desc:"屏幕模块供电。当前按 <b>3.3V</b> 接法工作正常。部分同型号模块板载稳压芯片、可接受 5V——但必须核对模块背板标注，不要凭型号猜。",
+    warn:"电压接错是烧屏的常见原因，接线前先用万用表确认。"},
+  gnd:{title:"GND → GND",tag:"公共地",color:"var(--c-gnd)",
+    desc:"所有信号电平的参考点，必须与 ESP32 <b>共地</b>。共地不良的典型症状：花屏、乱点、颜色异常——因为'高电平/低电平'是相对地而言的。",
+    warn:"面包板实验时，地线接触不良是最常见的'玄学故障'来源。"},
+  usb:{title:"USB → CP210x → 电脑 COM3",tag:"串口 · 115200",color:"#94a3b8",
+    desc:"板载 CP210x 芯片把 USB 转成串口：GPIO1(TX0) 发、GPIO3(RX0) 收，电脑端显示为 <b>COM3 @115200</b>。MicroPython 的 REPL、print 日志全走这条路。",
+    warn:"CP210x 的 DTR/RTS 接着复位电路——打开串口（或跑 esptool）都会让板子复位一次，所以发命令前要先等 3~5 秒启动完成。串口同一时刻只能被一个程序占用。"}
+};
+
+/* ================= 生成板子右侧引脚 ================= */
+const BOARD_R = [
+  ["D23","mosi"],["D22",null],["TX0","usb"],["RX0","usb"],["D21",null],["GND","gnd"],
+  ["D19","bl"],["D18","sck"],["D5","cs"],["TX2",null],["RX2",null],["D4","res"],
+  ["D2","dc"],["D15",null],["GND","gnd"],["3V3","vcc"]
+];
+const boardG = document.getElementById("boardpins");
+const NS = "http://www.w3.org/2000/svg";
+BOARD_R.forEach(([name,k],i)=>{
+  const y = 60 + i*32;
+  const g = document.createElementNS(NS,"g");
+  if(k) g.setAttribute("class","pad"); g.dataset.k = k || "";
+  const r = document.createElementNS(NS,"rect");
+  r.setAttribute("x",310); r.setAttribute("y",y-7); r.setAttribute("width",22); r.setAttribute("height",14);
+  r.setAttribute("rx",3); r.setAttribute("fill", k ? "var(--"+({mosi:"c-mosi",sck:"c-sck",cs:"c-cs",dc:"c-dc",res:"c-res",bl:"c-bl",vcc:"c-vcc",gnd:"c-gnd",usb:"n/a"})[k]+")" : "#4b5563");
+  if(k==="usb") r.setAttribute("fill","#94a3b8");
+  const t = document.createElementNS(NS,"text");
+  t.setAttribute("x",304); t.setAttribute("y",y+4); t.setAttribute("text-anchor","end");
+  t.setAttribute("fill", k ? "#f8fafc" : "#a7b7a9"); t.textContent = name;
+  g.appendChild(r); g.appendChild(t); boardG.appendChild(g);
+});
+
+/* ================= 生成显示屏引脚 ================= */
+const DISP_PINS = ["GND","CS","DC","RES","SDA","SCL","VCC","BLK"];
+const DISP_KEYS = ["gnd","cs","dc","res","mosi","sck","vcc","bl"];
+const dispG = document.getElementById("dispins");
+DISP_PINS.forEach((name,i)=>{
+  const y = 150 + i*50, k = DISP_KEYS[i];
+  const g = document.createElementNS(NS,"g");
+  g.setAttribute("class","pad"); g.dataset.k = k;
+  const r = document.createElementNS(NS,"rect");
+  r.setAttribute("x",748); r.setAttribute("y",y-7); r.setAttribute("width",22); r.setAttribute("height",14);
+  r.setAttribute("rx",3); r.setAttribute("fill","var(--"+({gnd:"c-gnd",cs:"c-cs",dc:"c-dc",res:"c-res",mosi:"c-mosi",sck:"c-sck",vcc:"c-vcc",bl:"c-bl"})[k]+")");
+  const t = document.createElementNS(NS,"text");
+  t.setAttribute("x",778); t.setAttribute("y",y+4);
+  t.setAttribute("fill","#9fb6d9"); t.textContent = name;
+  g.appendChild(r); g.appendChild(t); dispG.appendChild(g);
+});
+
+/* ================= 交互：点击 → 讲解面板 ================= */
+const svg = document.getElementById("diag");
+const panel = document.getElementById("infopanel");
+let current = null;
+
+function show(k){
+  const d = WIRE_INFO[k];
+  if(!d) return;
+  current = k;
+  document.querySelectorAll("#diag .wire").forEach(w=>{
+    w.classList.toggle("active", w.dataset.k===k);
+  });
+  svg.classList.add("focused");
+  document.querySelectorAll("#diag .pad").forEach(p=>p.classList.toggle("sel", p.dataset.k===k));
+  panel.innerHTML = `
+    <h3><span style="display:inline-block;width:30px;height:6px;border-radius:3px;background:${d.color}"></span>
+        ${d.title}<span class="tag">${d.tag}</span></h3>
+    <div style="font-size:14.5px">${d.desc}</div>
+    ${d.warn?`<div class="warn">⚠️ ${d.warn}</div>`:""}`;
+}
+function reset(){
+  current = null;
+  svg.classList.remove("focused");
+  document.querySelectorAll("#diag .wire").forEach(w=>w.classList.remove("active"));
+  document.querySelectorAll("#diag .pad").forEach(p=>p.classList.remove("sel"));
+  panel.innerHTML = `<div class="ph">👆 点击任意连线、引脚或图例，这里会显示讲解</div>`;
+}
+document.querySelectorAll("#diag .wire").forEach(w=>{
+  w.addEventListener("click",()=>{ w.dataset.k===current ? reset() : show(w.dataset.k); });
+});
+document.querySelectorAll("#diag .pad").forEach(p=>{
+  p.addEventListener("click",()=>{ p.dataset.k && (p.dataset.k===current ? reset() : show(p.dataset.k)); });
+});
+document.querySelectorAll(".legend span[data-k]").forEach(s=>{
+  s.addEventListener("click",()=>{ s.dataset.k===current ? reset() : show(s.dataset.k); });
+});
+
+/* ================= 引脚表筛选 ================= */
+document.getElementById("filters").addEventListener("click",e=>{
+  const btn = e.target.closest("button"); if(!btn) return;
+  document.querySelectorAll("#filters button").forEach(b=>b.classList.toggle("on", b===btn));
+  const f = btn.dataset.f;
+  document.querySelectorAll("#pintable tbody tr").forEach(tr=>{
+    tr.style.display = (f==="all" || (tr.dataset.cat||"").includes(f)) ? "" : "none";
+  });
+});
+</script>
+</body>
+</html>

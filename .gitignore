@@ -1,0 +1,6 @@
+logs/
+*.log
+__pycache__/
+board_backup/
+output/
+.workbuddy/
