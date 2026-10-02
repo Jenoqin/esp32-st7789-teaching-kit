@@ -15,10 +15,10 @@
 
 ## 快速开始
 
-1. 用 Thonny 打开 `web_screen_remote.py`；
-2. **先把文件顶部的 `SSID` / `PASSWORD` 改成你自己的 WiFi**（本仓库不含任何真实凭据）；
-3. 按 F5 运行，屏幕会显示 IP；
-4. 手机连**同一 WiFi 的同一网段**，浏览器打开屏幕上的 IP，点按钮即可。
+1. **先把 `web_screen_remote.py` 顶部的 `SSID` / `PASSWORD` 改成你自己的 WiFi**（本仓库不含任何真实凭据）；
+2. 把 `web_screen_remote.py` 和 `main.py`（上电加载器）传到板子，复位即自动启动；
+   调试时也可用 Thonny 打开 `web_screen_remote.py` 按 F5 直接运行；
+3. 屏幕会显示 IP；手机连**同一 WiFi 的同一网段**，浏览器打开它，点按钮即可。
    路由器连不上时开发板会自动开热点（YY-ESP32 / 12345678），手机连热点访问 http://192.168.4.1。
 
 ## 功能
@@ -40,6 +40,7 @@
 | 文件 | 说明 |
 |---|---|
 | `web_screen_remote.py` | 板端主程序：WiFi + HTTP 服务 + 屏幕 |
+| `main.py` | 上电加载器（两行），自动启动上面的主程序 |
 | `display_quickstart.py` | ST7789 驱动速用库（init/fill/text/背光） |
 | `esp32_check.py` | 枚举串口 + 抓启动日志 |
 | `esp32_repl_probe.py` / `esp32_detail_probe.py` | REPL 只读探测 / 芯片深度信息 |
